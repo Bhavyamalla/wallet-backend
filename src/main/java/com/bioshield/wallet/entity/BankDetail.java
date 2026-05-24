@@ -11,9 +11,12 @@ public class BankDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String email; // Links this bank record back to the registered user
+    private String email;
     private String bankName;
+
+    @Column(unique = true)
     private String accountNumber;
+
     private String ifscCode;
     private String accountHolderName;
 }

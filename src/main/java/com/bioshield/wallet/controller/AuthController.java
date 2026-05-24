@@ -1,11 +1,9 @@
 package com.bioshield.wallet.controller;
-import java.util.List;
-import java.util.Map; // <-- Must be exactly java.util.Map
 
-import com.bioshield.wallet.entity.User;
+import com.bioshield.wallet.dto.LoginResponse;
 import com.bioshield.wallet.entity.TransactionRecord;
-import com.bioshield.wallet.entity.BankDetail; // Fresh Import
-import com.bioshield.wallet.repository.BankDetailRepository; // Fresh Import
+import com.bioshield.wallet.entity.BankDetail;
+import com.bioshield.wallet.repository.BankDetailRepository;
 import com.bioshield.wallet.service.UserService;
 import com.bioshield.wallet.dto.RegisterRequest;
 import com.bioshield.wallet.dto.LoginRequest;
@@ -19,14 +17,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "https://biosheild.vercel.app"
+})
 public class AuthController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private BankDetailRepository bankDetailRepository; // Injected repository for separate bank saving
+    @Autowired private UserService userService;
+    @Autowired private BankDetailRepository bankDetailRepository;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
@@ -41,16 +39,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            User user = userService.authenticateUser(request);
-            return ResponseEntity.ok(user);
+            LoginResponse response = userService.authenticateUser(request);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
     }
 
-    // =========================================================================
-    // NEW ENDPOINT: Called by your second frontend page (Bank Details Page)
-    // =========================================================================
     @PostMapping("/link-bank")
     public ResponseEntity<?> linkBankDetails(@RequestBody Map<String, String> payload) {
         try {
@@ -58,26 +53,22 @@ public class AuthController {
             String bankName = payload.get("bankName");
             String accountNumber = payload.get("accountNumber");
             String ifscCode = payload.get("ifscCode");
-            String accountHolderName = payload.get("accountHolderName");
 
             if (email == null || bankName == null || accountNumber == null || ifscCode == null) {
-                return ResponseEntity.badRequest().body("All bank details are mandatory.");
+                return ResponseEntity.badRequest().body("All bank details are required.");
             }
 
-            // Create and populate a fresh row for our database table
             BankDetail bankDetail = new BankDetail();
             bankDetail.setEmail(email);
             bankDetail.setBankName(bankName);
             bankDetail.setAccountNumber(accountNumber);
             bankDetail.setIfscCode(ifscCode);
-            bankDetail.setAccountHolderName(accountHolderName != null ? accountHolderName : "Standard Account Node");
+            bankDetail.setAccountHolderName(payload.getOrDefault("accountHolderName", "Account Holder"));
 
-            // Save straight to the bank_details table
             bankDetailRepository.save(bankDetail);
-
-            return ResponseEntity.ok(Map.of("message", "Bank details verified and linked successfully."));
+            return ResponseEntity.ok(Map.of("message", "Bank account linked successfully."));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Internal processing error: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to link bank: " + e.getMessage());
         }
     }
 
@@ -85,7 +76,7 @@ public class AuthController {
     public ResponseEntity<?> generateOtp(@RequestBody Map<String, String> payload) {
         try {
             userService.emitOtpToken(payload.get("email"));
-            return ResponseEntity.ok(Map.of("message", "OTP generated and dispatched to your email address."));
+            return ResponseEntity.ok(Map.of("message", "OTP sent to your email."));
         } catch (Exception e) {
             return ResponseEntity.status(404).body(e.getMessage());
         }
@@ -94,8 +85,8 @@ public class AuthController {
     @PostMapping("/verify-balance-otp")
     public ResponseEntity<?> verifyBalanceOtp(@RequestBody Map<String, String> payload) {
         try {
-            double currentBalance = userService.verifyBalanceAccess(payload.get("email"), payload.get("otp"));
-            return ResponseEntity.ok(Map.of("balance", currentBalance));
+            double balance = userService.verifyBalanceAccess(payload.get("email"), payload.get("otp"));
+            return ResponseEntity.ok(Map.of("balance", balance));
         } catch (Exception e) {
             return ResponseEntity.status(403).body(e.getMessage());
         }
@@ -112,12 +103,12 @@ public class AuthController {
     }
 
     @GetMapping("/ledger")
-    public ResponseEntity<?> getLedgerRecords(@RequestParam String email, @RequestParam String role) {
+    public ResponseEntity<?> getLedgerRecords(@RequestParam String email) {
         try {
-            List<TransactionRecord> history = userService.fetchGlobalAuditTrail(email, role);
+            List<TransactionRecord> history = userService.fetchGlobalAuditTrail(email);
             return ResponseEntity.ok(history);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
 
@@ -134,14 +125,14 @@ public class AuthController {
     @PostMapping("/update-profile")
     public ResponseEntity<?> updateUserProfile(@RequestBody Map<String, String> payload) {
         try {
-            String email = payload.get("email");
-            String name = payload.get("name");
-            String password = payload.get("password");
-            String bankName = payload.get("bankName");
-            String accountNumber = payload.get("accountNumber");
-            String ifscCode = payload.get("ifscCode");
-
-            String result = userService.updateProfileInfo(email, name, password, bankName, accountNumber, ifscCode);
+            String result = userService.updateProfileInfo(
+                    payload.get("email"),
+                    payload.get("name"),
+                    payload.get("password"),
+                    payload.get("bankName"),
+                    payload.get("accountNumber"),
+                    payload.get("ifscCode")
+            );
             return ResponseEntity.ok(Map.of("message", result));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(e.getMessage());

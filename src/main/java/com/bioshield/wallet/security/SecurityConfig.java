@@ -25,7 +25,7 @@ public class SecurityConfig {
                         // Permits all endpoints under /api/ to bypass security filters without 403 errors
                         .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated()
-                );
+                   );
 
         return http.build();
     }
@@ -34,7 +34,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://biosheild.vercel.app"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

@@ -6,11 +6,6 @@ import lombok.Data;
 public class RegisterRequest {
     private String name;
     private String email;
-    private String phoneNumber; // <-- Added phone number field here
+    private String phoneNumber;
     private String password;
-
-    // Add these inside RegisterRequest class
-    private String bankName;
-    private String accountNumber;
-    private String ifscCode;
 }

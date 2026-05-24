@@ -17,8 +17,7 @@ public class User {
     private String password;
     private String role;
     private double balance;
+    private String phoneNumber;
     private String otp;
-
-    // Tracks when the 4-digit code window closes
     private LocalDateTime otpExpiryTime;
 }
