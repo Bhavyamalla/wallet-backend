@@ -1,0 +1,23 @@
+# Build output
+target/
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Local env (never bake secrets into the image)
+.env
+.env.*
+*.local
+
+# Docs and CI metadata not needed in the image
+README.md
+render.yaml
+agent-setup-log.txt
