@@ -9,8 +9,6 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
-      - key: PORT
-        value: "8080"
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_USERNAME
